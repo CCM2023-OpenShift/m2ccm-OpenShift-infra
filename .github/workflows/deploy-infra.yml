@@ -1,0 +1,37 @@
+name: deploy infra
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+
+      - name: Login to OpenShift
+        uses: redhat-actions/oc-login@v2
+        with:
+            openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+            token:                  ${{ secrets.OPENSHIFT_TOKEN }}
+            namespace:              lmagniez03-dev
+      - name: Deploy PostgreSQL DB
+        run: |
+            # L'apply est idempotent : si la Deployment existe déjà, elle sera simplement mise à jour
+              oc apply -f infrastructure/postgresql-deployment.yaml
